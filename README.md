@@ -65,12 +65,13 @@ video-conf/
 3. **Configure Firebase**:
    - Create Firebase project
    - Enable Firestore and Authentication
-   - Download service account key as `serviceAccountKey.json`
+   - Generate service account key
+   - **See [Firebase Setup Guide](./backend/FIREBASE_SETUP.md) for detailed instructions**
 
 4. **Set up environment**:
    ```bash
    cp .env.example .env
-   # Edit .env with your Firebase configuration
+   # Edit .env with your Firebase configuration (see Firebase Setup Guide)
    ```
 
 5. **Start the server**:

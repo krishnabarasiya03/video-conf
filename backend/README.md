@@ -49,21 +49,29 @@ A production-ready Node.js backend for a video conferencing platform using media
    - Generate a service account key:
      - Go to Project Settings > Service Accounts
      - Click "Generate new private key"
-     - Save the JSON file as `serviceAccountKey.json` in the backend directory
+     - Download the JSON file
 
 4. **Configure environment variables**:
    ```bash
    cp .env.example .env
    ```
    
-   Edit `.env` with your configuration:
+   Edit `.env` with your Firebase configuration. You have two options:
+
+   **Option 1: Environment Variables (Recommended)**
+   
+   Open the downloaded service account JSON file and copy the values to your `.env`:
    ```env
    PORT=3000
    NODE_ENV=development
    
    # Firebase Configuration
    FIREBASE_PROJECT_ID=your-firebase-project-id
-   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json
+   FIREBASE_PRIVATE_KEY_ID=your-private-key-id
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour-private-key-content\n-----END PRIVATE KEY-----"
+   FIREBASE_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+   FIREBASE_CLIENT_ID=your-client-id
+   FIREBASE_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/your-service-account%40your-project.iam.gserviceaccount.com
    
    # mediasoup Configuration
    MEDIASOUP_LISTEN_IP=0.0.0.0
@@ -74,6 +82,23 @@ A production-ready Node.js backend for a video conferencing platform using media
    # CORS Configuration
    CORS_ORIGINS=http://localhost:3000,http://localhost:5173
    ```
+
+   **Option 2: JSON File (Legacy)**
+   
+   Save the JSON file as `serviceAccountKey.json` in the backend directory and use:
+   ```env
+   # Firebase Configuration
+   FIREBASE_PROJECT_ID=your-firebase-project-id
+   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json
+   ```
+
+   **Important Notes:**
+   - Option 1 is recommended for production deployments and cloud platforms
+   - Option 2 is simpler for local development
+   - The private key in Option 1 should include the full content with `\n` for line breaks
+   - Keep your credentials secure and never commit them to version control
+
+   **📋 For detailed Firebase setup instructions, see [FIREBASE_SETUP.md](./FIREBASE_SETUP.md)**
 
 5. **Set up Firestore Security Rules** (recommended):
    ```javascript
