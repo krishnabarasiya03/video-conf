@@ -99,6 +99,7 @@ A production-ready Node.js backend for a video conferencing platform using media
    - Keep your credentials secure and never commit them to version control
 
    **📋 For detailed Firebase setup instructions, see [FIREBASE_SETUP.md](./FIREBASE_SETUP.md)**
+   **⚡ For quick setup, see [FIREBASE_QUICKSTART.md](./FIREBASE_QUICKSTART.md)**
 
 5. **Set up Firestore Security Rules** (recommended):
    ```javascript
