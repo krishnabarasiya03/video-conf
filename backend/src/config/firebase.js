@@ -48,23 +48,39 @@ const initializeFirebase = () => {
     }
   } catch (error) {
     console.error('Failed to initialize Firebase Admin SDK:', error.message);
-    process.exit(1);
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(1);
+    } else {
+      throw error;
+    }
   }
 };
 
 // Get Firestore instance
 const getFirestore = () => {
+  // Initialize Firebase if not already done
+  if (admin.apps.length === 0) {
+    initializeFirebase();
+  }
   return admin.firestore();
 };
 
 // Get Auth instance
 const getAuth = () => {
+  // Initialize Firebase if not already done
+  if (admin.apps.length === 0) {
+    initializeFirebase();
+  }
   return admin.auth();
 };
 
 // Verify Firebase ID token
 const verifyIdToken = async (idToken) => {
   try {
+    // Initialize Firebase if not already done
+    if (admin.apps.length === 0) {
+      initializeFirebase();
+    }
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     return decodedToken;
   } catch (error) {
