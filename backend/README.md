@@ -189,6 +189,10 @@ Authorization: Bearer <firebase-id-token>
 - `GET /api/students/me/profile` - Get student profile
 - `GET /api/students/me/dashboard` - Get student dashboard data
 
+#### Teacher Access to Student Data
+- `GET /api/students` - Get all students data with pagination (teacher access)
+- `GET /api/students/:id` - Get specific student data by ID (teacher access)
+
 ### WebRTC & Socket.IO Events
 
 #### Connection

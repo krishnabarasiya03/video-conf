@@ -171,4 +171,179 @@ router.get('/me/dashboard', authenticateToken, requireRole('student'), async (re
   }
 });
 
+// GET /api/students - Get all students data (teacher access)
+router.get('/', authenticateToken, requireRole('teacher'), async (req, res) => {
+  try {
+    const { limit = 50, offset = 0 } = req.query;
+    
+    // Validate pagination parameters
+    const limitNum = parseInt(limit);
+    const offsetNum = parseInt(offset);
+    
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'limit must be a number between 1 and 100'
+      });
+    }
+    
+    if (isNaN(offsetNum) || offsetNum < 0) {
+      return res.status(400).json({
+        error: 'Validation Error', 
+        message: 'offset must be a non-negative number'
+      });
+    }
+
+    // Get all users with student role from Firebase
+    const usersSnapshot = await scheduleService.db.collection('users')
+      .where('role', '==', 'student')
+      .limit(limitNum)
+      .offset(offsetNum)
+      .get();
+
+    const students = [];
+    
+    for (const doc of usersSnapshot.docs) {
+      const studentData = doc.data();
+      const studentId = doc.id;
+      
+      // Get enrollment count for each student
+      const enrollmentsSnapshot = await scheduleService.db.collection('enrollments')
+        .where('studentId', '==', studentId)
+        .get();
+      
+      const enrollmentCount = enrollmentsSnapshot.size;
+      
+      // Get upcoming classes count
+      const upcomingSchedules = await scheduleService.getStudentSchedule(studentId, {
+        upcoming: true
+      });
+
+      students.push({
+        id: studentId,
+        name: studentData.name,
+        email: studentData.email,
+        role: studentData.role,
+        createdAt: studentData.createdAt,
+        updatedAt: studentData.updatedAt,
+        stats: {
+          enrolledCourses: enrollmentCount,
+          upcomingClasses: upcomingSchedules.length
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        students,
+        pagination: {
+          limit: limitNum,
+          offset: offsetNum,
+          count: students.length
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching students data:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to fetch students data'
+    });
+  }
+});
+
+// GET /api/students/:id - Get specific student data by ID (teacher access)
+router.get('/:id', authenticateToken, requireRole('teacher'), async (req, res) => {
+  try {
+    const { id: studentId } = req.params;
+    
+    if (!studentId) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Student ID is required'
+      });
+    }
+
+    // Get student profile from Firebase
+    const studentDoc = await scheduleService.db.collection('users').doc(studentId).get();
+    
+    if (!studentDoc.exists) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Student not found'
+      });
+    }
+
+    const studentData = studentDoc.data();
+    
+    // Verify that the user is actually a student
+    if (studentData.role !== 'student') {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Student not found'
+      });
+    }
+
+    // Get detailed enrollment information
+    const enrollmentsSnapshot = await scheduleService.db.collection('enrollments')
+      .where('studentId', '==', studentId)
+      .get();
+
+    const courseIds = enrollmentsSnapshot.docs.map(doc => doc.data().courseId);
+    
+    let courses = [];
+    if (courseIds.length > 0) {
+      const coursesSnapshot = await scheduleService.db.collection('courses')
+        .where('__name__', 'in', courseIds)
+        .get();
+
+      courses = coursesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    }
+
+    // Get upcoming schedules
+    const upcomingSchedules = await scheduleService.getStudentSchedule(studentId, {
+      upcoming: true
+    });
+
+    // Get today's classes
+    const today = new Date();
+    const todaySchedules = await scheduleService.getStudentSchedule(studentId, {
+      from: today.toISOString().split('T')[0],
+      to: today.toISOString().split('T')[0]
+    });
+
+    const studentProfile = {
+      id: studentId,
+      name: studentData.name,
+      email: studentData.email,
+      role: studentData.role,
+      createdAt: studentData.createdAt,
+      updatedAt: studentData.updatedAt,
+      stats: {
+        enrolledCourses: courses.length,
+        upcomingClasses: upcomingSchedules.length,
+        todayClasses: todaySchedules.length
+      },
+      enrolledCourses: courses,
+      upcomingClasses: upcomingSchedules.slice(0, 10), // Limit to 10 for detailed view
+      todayClasses: todaySchedules
+    };
+
+    res.json({
+      success: true,
+      data: studentProfile
+    });
+  } catch (error) {
+    console.error('Error fetching student data:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to fetch student data'
+    });
+  }
+});
+
 module.exports = router;
