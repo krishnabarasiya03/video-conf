@@ -64,26 +64,16 @@ describe('Backend API Tests', () => {
     });
   });
 
-  describe('Authentication Required Endpoints', () => {
-    it('should require authentication for protected routes', async () => {
-      const response = await request(app).get('/api/me');
+  describe('Authentication Required Endpoints - All removed', () => {
+    it('should return 404 for removed API endpoints', async () => {
+      // Test that removed endpoints now return 404
+      const endpoints = ['/api/me', '/api/courses', '/api/schedules', '/api/students', '/api/enrollments'];
       
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Unauthorized');
-    });
-
-    it('should require authentication for courses', async () => {
-      const response = await request(app).get('/api/courses');
-      
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Unauthorized');
-    });
-
-    it('should require authentication for schedules', async () => {
-      const response = await request(app).get('/api/schedules');
-      
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe('Unauthorized');
+      for (const endpoint of endpoints) {
+        const response = await request(app).get(endpoint);
+        expect(response.status).toBe(404);
+        expect(response.body.error).toBe('Not Found');
+      }
     });
   });
 
@@ -168,20 +158,4 @@ describe('Room Service', () => {
   });
 });
 
-// Test the schedule service
-describe('Schedule Service', () => {
-  const ScheduleService = require('../src/services/scheduleService');
-  let scheduleService;
-
-  beforeEach(() => {
-    scheduleService = new ScheduleService();
-  });
-
-  it('should be instantiated correctly', () => {
-    expect(scheduleService).toBeDefined();
-    expect(scheduleService.db).toBeDefined();
-  });
-
-  // Note: More comprehensive tests would require Firebase emulator
-  // These are basic instantiation tests
-});
+// Test the schedule service - Removed as per requirements

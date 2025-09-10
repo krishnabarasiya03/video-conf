@@ -1,9 +1,6 @@
 const { getRouter, createWebRtcTransport, getRouterRtpCapabilities } = require('../config/mediasoup');
 const roomService = require('../services/roomService');
-const ScheduleService = require('../services/scheduleService');
 const { verifyIdToken, getFirestore } = require('../config/firebase');
-
-const scheduleService = new ScheduleService();
 const db = getFirestore();
 
 const setupSignaling = (io) => {
@@ -52,17 +49,7 @@ const setupSignaling = (io) => {
           return callback({ error: 'Only teachers can create rooms' });
         }
 
-        // Verify room/schedule exists and teacher owns it
-        const canAccess = await scheduleService.canUserAccessRoom(
-          socket.user.uid,
-          roomId,
-          socket.user.role
-        );
-
-        if (!canAccess) {
-          return callback({ error: 'You do not have permission to create this room' });
-        }
-
+        // Simple room creation without schedule verification
         // Create room in room service
         roomService.createRoom(roomId);
         
@@ -97,17 +84,6 @@ const setupSignaling = (io) => {
     socket.on('joinRoom', async (data, callback) => {
       try {
         const { roomId } = data;
-
-        // Verify user can access this room
-        const canAccess = await scheduleService.canUserAccessRoom(
-          socket.user.uid,
-          roomId,
-          socket.user.role
-        );
-
-        if (!canAccess) {
-          return callback({ error: 'You do not have permission to join this room' });
-        }
 
         // Check if room exists
         if (!roomService.roomExists(roomId)) {
@@ -376,15 +352,7 @@ const setupSignaling = (io) => {
           timestamp: new Date().toISOString()
         };
 
-        // Optionally persist chat messages to Firestore
-        try {
-          const schedule = await scheduleService.getScheduleByRoomId(user.roomId);
-          await db.collection('schedules').doc(schedule.id)
-            .collection('messages').add(message);
-        } catch (error) {
-          console.warn('Failed to persist chat message:', error);
-        }
-
+        // Simple chat message without persistence
         // Broadcast message to room
         io.to(user.roomId).emit('chat:message', message);
 
