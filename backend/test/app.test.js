@@ -6,6 +6,11 @@ jest.mock('../src/config/firebase', () => ({
   initializeFirebase: jest.fn(),
   getFirestore: jest.fn(() => ({
     collection: jest.fn(() => ({
+      get: jest.fn(() => Promise.resolve({ 
+        empty: true, 
+        docs: [],
+        forEach: jest.fn()
+      })),
       doc: jest.fn(() => ({
         get: jest.fn(() => Promise.resolve({ exists: false })),
         set: jest.fn(() => Promise.resolve()),
@@ -64,10 +69,22 @@ describe('Backend API Tests', () => {
     });
   });
 
+  describe('Students API', () => {
+    it('should return students data without authentication', async () => {
+      const response = await request(app).get('/api/students');
+      
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.students).toBeDefined();
+      expect(response.body.data.count).toBeDefined();
+    });
+  });
+
   describe('Authentication Required Endpoints - All removed', () => {
     it('should return 404 for removed API endpoints', async () => {
       // Test that removed endpoints now return 404
-      const endpoints = ['/api/me', '/api/courses', '/api/schedules', '/api/students', '/api/enrollments'];
+      const endpoints = ['/api/me', '/api/courses', '/api/schedules', '/api/enrollments'];
       
       for (const endpoint of endpoints) {
         const response = await request(app).get(endpoint);
