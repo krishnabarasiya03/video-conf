@@ -5,18 +5,63 @@ const { app } = require('../src/server');
 jest.mock('../src/config/firebase', () => ({
   initializeFirebase: jest.fn(),
   getFirestore: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(() => ({
-        get: jest.fn(() => Promise.resolve({ exists: false })),
-        set: jest.fn(() => Promise.resolve()),
-        update: jest.fn(() => Promise.resolve()),
-        delete: jest.fn(() => Promise.resolve())
-      })),
-      add: jest.fn(() => Promise.resolve({ id: 'test-id' })),
-      where: jest.fn(() => ({
-        get: jest.fn(() => Promise.resolve({ empty: true, docs: [] }))
-      }))
-    }))
+    collection: jest.fn((collectionName) => {
+      if (collectionName === 'users') {
+        return {
+          where: jest.fn(() => ({
+            get: jest.fn(() => Promise.resolve({
+              empty: false,
+              forEach: jest.fn((callback) => {
+                // Mock student data
+                callback({
+                  id: 'student-1',
+                  data: () => ({
+                    name: 'John Student',
+                    email: 'john@example.com',
+                    role: 'student',
+                    createdAt: '2024-01-01T00:00:00.000Z',
+                    avatar: null,
+                    bio: '',
+                    phone: ''
+                  })
+                });
+                callback({
+                  id: 'student-2',
+                  data: () => ({
+                    name: 'Jane Student',
+                    email: 'jane@example.com',
+                    role: 'student',
+                    createdAt: '2024-01-02T00:00:00.000Z',
+                    avatar: 'avatar.jpg',
+                    bio: 'Computer Science student',
+                    phone: '123-456-7890'
+                  })
+                });
+              })
+            }))
+          })),
+          doc: jest.fn(() => ({
+            get: jest.fn(() => Promise.resolve({ exists: false })),
+            set: jest.fn(() => Promise.resolve()),
+            update: jest.fn(() => Promise.resolve()),
+            delete: jest.fn(() => Promise.resolve())
+          })),
+          add: jest.fn(() => Promise.resolve({ id: 'test-id' }))
+        };
+      }
+      return {
+        doc: jest.fn(() => ({
+          get: jest.fn(() => Promise.resolve({ exists: false })),
+          set: jest.fn(() => Promise.resolve()),
+          update: jest.fn(() => Promise.resolve()),
+          delete: jest.fn(() => Promise.resolve())
+        })),
+        add: jest.fn(() => Promise.resolve({ id: 'test-id' })),
+        where: jest.fn(() => ({
+          get: jest.fn(() => Promise.resolve({ empty: true, docs: [] }))
+        }))
+      };
+    })
   })),
   verifyIdToken: jest.fn(() => Promise.resolve({ uid: 'test-uid', email: 'test@example.com' }))
 }));
@@ -51,6 +96,7 @@ describe('Backend API Tests', () => {
       expect(response.body).toHaveProperty('message');
       expect(response.body).toHaveProperty('endpoints');
       expect(response.body).toHaveProperty('websocket');
+      expect(response.body.endpoints).toHaveProperty('students');
     });
   });
 
@@ -67,13 +113,25 @@ describe('Backend API Tests', () => {
   describe('Authentication Required Endpoints - All removed', () => {
     it('should return 404 for removed API endpoints', async () => {
       // Test that removed endpoints now return 404
-      const endpoints = ['/api/me', '/api/courses', '/api/schedules', '/api/students', '/api/enrollments'];
+      const endpoints = ['/api/me', '/api/courses', '/api/schedules', '/api/enrollments'];
       
       for (const endpoint of endpoints) {
         const response = await request(app).get(endpoint);
         expect(response.status).toBe(404);
         expect(response.body.error).toBe('Not Found');
       }
+    });
+  });
+
+  describe('Public Student Data Endpoint', () => {
+    it('should return student data without authentication', async () => {
+      const response = await request(app).get('/api/students');
+      
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('students');
+      expect(response.body.data).toHaveProperty('count');
+      expect(Array.isArray(response.body.data.students)).toBe(true);
     });
   });
 

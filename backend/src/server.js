@@ -109,6 +109,65 @@ app.get('/api/rtpCapabilities', (req, res) => {
   }
 });
 
+// Public endpoint to get student data from Firebase (no authentication required)
+app.get('/api/students', async (req, res) => {
+  try {
+    const { getFirestore } = require('./config/firebase');
+    const db = getFirestore();
+    
+    // Query users collection for students
+    const studentsSnapshot = await db.collection('users')
+      .where('role', '==', 'student')
+      .get();
+    
+    if (studentsSnapshot.empty) {
+      return res.json({
+        success: true,
+        data: {
+          students: [],
+          count: 0
+        },
+        message: 'No students found'
+      });
+    }
+    
+    const students = [];
+    studentsSnapshot.forEach(doc => {
+      const studentData = doc.data();
+      students.push({
+        id: doc.id,
+        name: studentData.name || 'Unknown',
+        email: studentData.email || '',
+        role: studentData.role,
+        createdAt: studentData.createdAt || null,
+        updatedAt: studentData.updatedAt || null,
+        // Add any other relevant student fields
+        profile: {
+          avatar: studentData.avatar || null,
+          bio: studentData.bio || '',
+          phone: studentData.phone || ''
+        }
+      });
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        students: students,
+        count: students.length
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching student data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: 'Failed to fetch student data from Firebase'
+    });
+  }
+});
+
 // API routes - All removed as per requirements
 // Only keeping mediasoup RTP capabilities endpoint for video conferencing
 
@@ -122,7 +181,8 @@ app.get('/', (req, res) => {
     status: 'Running',
     endpoints: {
       health: '/health',
-      rtpCapabilities: '/api/rtpCapabilities'
+      rtpCapabilities: '/api/rtpCapabilities',
+      students: '/api/students'
     },
     websocket: {
       path: '/socket.io/',
