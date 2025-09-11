@@ -151,10 +151,17 @@ A production-ready Node.js backend for a video conferencing platform using media
 
 ### Authentication
 
-All protected endpoints require a Firebase ID token in the Authorization header:
+Most protected endpoints require a Firebase ID token in the Authorization header:
 ```
 Authorization: Bearer <firebase-id-token>
 ```
+
+**Public Endpoints (No Authentication Required):**
+- `GET /health` - Server health status
+- `GET /api/rtpCapabilities` - MediaSoup RTP capabilities for WebRTC
+- `GET /api/students` - Get all student data from Firebase
+
+**Note:** The `/api/students` endpoint provides public access to student data from Firebase without requiring authentication, as per the application requirements.
 
 ### REST API Endpoints
 
@@ -184,14 +191,38 @@ Authorization: Bearer <firebase-id-token>
 - `PUT /api/schedules/:id` - Update schedule (teacher only)
 - `DELETE /api/schedules/:id` - Delete schedule (teacher only)
 
-#### Students
+#### Students (Public Access)
+- `GET /api/students` - Get all students data from Firebase (no authentication required)
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "students": [
+      {
+        "id": "student-uid-1",
+        "name": "John Student",
+        "email": "john@example.com",
+        "role": "student",
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z",
+        "profile": {
+          "avatar": null,
+          "bio": "",
+          "phone": ""
+        }
+      }
+    ],
+    "count": 1
+  }
+}
+```
+
+#### Students (Authenticated Access)
 - `GET /api/students/me/schedule` - Get student's scheduled classes
 - `GET /api/students/me/profile` - Get student profile
 - `GET /api/students/me/dashboard` - Get student dashboard data
-
-#### Teacher Access to Student Data
-- `GET /api/students` - Get all students data with pagination (teacher access)
-- `GET /api/students/:id` - Get specific student data by ID (teacher access)
 
 ### WebRTC & Socket.IO Events
 
