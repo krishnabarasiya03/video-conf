@@ -11,7 +11,8 @@ const rateLimit = require('express-rate-limit');
 const { initializeFirebase } = require('./config/firebase');
 const { initializeMediasoup, closeWorker } = require('./config/mediasoup');
 
-// Import routes - All API routes removed as per requirements
+// Import routes
+const studentsRoutes = require('./routes/students');
 
 // Import Socket.IO setup
 const setupSignaling = require('./sockets/signaling');
@@ -109,8 +110,8 @@ app.get('/api/rtpCapabilities', (req, res) => {
   }
 });
 
-// API routes - All removed as per requirements
-// Only keeping mediasoup RTP capabilities endpoint for video conferencing
+// API routes
+app.use('/api/students', studentsRoutes);
 
 // Protected route to get user profile - Removed as per requirements
 
@@ -122,7 +123,8 @@ app.get('/', (req, res) => {
     status: 'Running',
     endpoints: {
       health: '/health',
-      rtpCapabilities: '/api/rtpCapabilities'
+      rtpCapabilities: '/api/rtpCapabilities',
+      students: '/api/students'
     },
     websocket: {
       path: '/socket.io/',
