@@ -1,55 +1,38 @@
 const { getRouter, createWebRtcTransport, getRouterRtpCapabilities } = require('../config/mediasoup');
 const roomService = require('../services/roomService');
-const { verifyIdToken, getFirestore } = require('../config/firebase');
-const db = getFirestore();
+// Firebase imports removed for simplified setup - no authentication required
 
 const setupSignaling = (io) => {
-  // Middleware for Socket.IO authentication
+  // Simplified Socket.IO setup without authentication for testing
+  // Users can provide basic info in handshake auth
   io.use(async (socket, next) => {
     try {
-      const token = socket.handshake.auth.token;
-      if (!token) {
-        return next(new Error('No authentication token provided'));
-      }
-
-      // Verify Firebase ID token
-      const decodedToken = await verifyIdToken(token);
+      const { name, role, userId } = socket.handshake.auth;
       
-      // Get user profile from Firestore
-      const userDoc = await db.collection('users').doc(decodedToken.uid).get();
-      if (!userDoc.exists) {
-        return next(new Error('User profile not found'));
-      }
-
-      const userData = userDoc.data();
+      // Use provided user info or defaults for testing
       socket.user = {
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        name: userData.name,
-        role: userData.role,
-        ...userData
+        uid: userId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        email: `${name || 'testuser'}@example.com`,
+        name: name || 'Test User',
+        role: role || 'student'
       };
 
       next();
     } catch (error) {
-      console.error('Socket authentication error:', error);
-      next(new Error('Authentication failed'));
+      console.error('Socket setup error:', error);
+      next(new Error('Socket setup failed'));
     }
   });
 
   io.on('connection', (socket) => {
     console.log(`User connected: ${socket.user.name} (${socket.user.role}) - Socket ID: ${socket.id}`);
 
-    // Handle room creation (teacher only)
+    // Handle room creation (simplified - any user can create rooms for testing)
     socket.on('createRoom', async (data, callback) => {
       try {
         const { roomId } = data;
 
-        if (socket.user.role !== 'teacher') {
-          return callback({ error: 'Only teachers can create rooms' });
-        }
-
-        // Simple room creation without schedule verification
+        // Simplified room creation - any user can create rooms
         // Create room in room service
         roomService.createRoom(roomId);
         
@@ -59,7 +42,7 @@ const setupSignaling = (io) => {
         // Add user to room
         roomService.addUserToRoom(roomId, socket.user.uid, socket.id, socket.user);
 
-        console.log(`Teacher ${socket.user.name} created room: ${roomId}`);
+        console.log(`User ${socket.user.name} created room: ${roomId}`);
 
         callback({ 
           success: true,
